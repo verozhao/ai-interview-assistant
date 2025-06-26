@@ -1,28 +1,58 @@
 import openai
 from typing import Dict, List
+from .base_agent import BaseAgent
 
-class CodingAgent:
+class CodingAgent(BaseAgent):
     def __init__(self):
-        self.client = openai.OpenAI()
-        self.problem_patterns = {
-            "array": ["two pointers", "sliding window", "prefix sum"],
-            "tree": ["DFS", "BFS", "recursion"],
-            "dp": ["memoization", "tabulation", "state transition"]
+        super().__init__()
+        self.patterns = {
+            "array": {
+                "techniques": ["two pointers", "sliding window", "kadane"],
+                "complexity": ["O(n)", "O(n^2)", "O(nlogn)"]
+            },
+            "dynamic_programming": {
+                "techniques": ["memoization", "tabulation", "space optimization"],
+                "complexity": ["O(n)", "O(n^2)", "O(2^n) -> O(n)"]
+            },
+            "graph": {
+                "techniques": ["DFS", "BFS", "Dijkstra", "Union Find"],
+                "complexity": ["O(V+E)", "O(V^2)", "O(ElogV)"]
+            }
         }
     
-    async def solve_problem(self, problem: str, company: str) -> Dict:
+    async def process(self, question: str, context: Dict[str, Any]) -> Dict:
         # Identify pattern
-        pattern = self.identify_pattern(problem)
+        pattern = await self.identify_pattern(question)
         
-        # Generate solution with explanation
-        solution = await self.generate_solution(problem, pattern)
+        # Generate multiple approaches
+        approaches = await self.generate_approaches(question, pattern)
         
-        # Add company-specific optimizations
-        optimized = self.optimize_for_company(solution, company)
+        # Optimize for company
+        company_specific = self.optimize_for_company(
+            approaches, 
+            context.get("company")
+        )
         
         return {
             "pattern": pattern,
-            "solution": solution,
-            "complexity": self.analyze_complexity(solution),
-            "similar_problems": self.find_similar(problem, company)
+            "approaches": approaches,
+            "recommended": company_specific,
+            "implementation": await self.generate_code(company_specific),
+            "tests": self.generate_test_cases(question)
         }
+    
+    async def identify_pattern(self, question: str) -> str:
+        prompt = f"""
+        Identify the coding pattern for this problem:
+        {question}
+        
+        Patterns: {list(self.patterns.keys())}
+        Return only the pattern name.
+        """
+        
+        response = self.client.chat.completions.create(
+            model="gpt-4",
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        return response.choices[0].message.content.strip()

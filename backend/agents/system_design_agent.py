@@ -1,31 +1,33 @@
-class SystemDesignAgent:
+class SystemDesignAgent(BaseAgent):
     def __init__(self):
+        super().__init__()
         self.components = {
-            "storage": ["SQL", "NoSQL", "ObjectStore", "VectorDB"],
-            "compute": ["GPU", "TPU", "CPU cluster"],
-            "serving": ["REST", "gRPC", "GraphQL", "WebSocket"],
-            "ml_specific": ["Feature Store", "Model Registry", "A/B Testing"]
+            "data_layer": ["PostgreSQL", "MongoDB", "Cassandra", "Redis"],
+            "compute": ["EC2", "Kubernetes", "Lambda", "Fargate"],
+            "ml_serving": ["SageMaker", "TorchServe", "TF Serving", "Triton"],
+            "streaming": ["Kafka", "Kinesis", "Pub/Sub", "EventHub"],
+            "monitoring": ["Prometheus", "DataDog", "CloudWatch", "Grafana"]
         }
     
-    async def design_system(self, requirements: str) -> Dict:
-        # Parse requirements
-        scale = self.extract_scale(requirements)
-        ml_needs = self.identify_ml_components(requirements)
+    async def process(self, question: str, context: Dict[str, Any]) -> Dict:
+        # Extract requirements
+        requirements = await self.extract_requirements(question)
         
-        # Generate architecture
-        architecture = {
-            "data_pipeline": self.design_data_pipeline(scale),
-            "training_infra": self.design_training_infra(ml_needs),
-            "serving_layer": self.design_serving(scale),
-            "monitoring": self.design_monitoring()
-        }
+        # Design architecture
+        architecture = await self.design_system(requirements)
         
-        # Create visual diagram
-        diagram = self.generate_architecture_diagram(architecture)
+        # Add ML-specific components
+        if "ml" in question.lower() or "ai" in question.lower():
+            architecture["ml_pipeline"] = self.design_ml_pipeline(requirements)
+        
+        # Generate diagrams
+        diagram_code = self.generate_diagram(architecture)
         
         return {
+            "requirements": requirements,
             "architecture": architecture,
-            "diagram": diagram,
-            "cost_estimate": self.estimate_cost(architecture, scale),
-            "tradeoffs": self.analyze_tradeoffs(architecture)
+            "diagram": diagram_code,
+            "tradeoffs": self.analyze_tradeoffs(architecture),
+            "scaling": self.design_scaling_strategy(requirements),
+            "cost_estimate": self.estimate_cost(architecture)
         }
